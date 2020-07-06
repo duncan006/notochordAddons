@@ -13,10 +13,11 @@ packetReady = False
 ePacketReady = False
 qPacketReady = False
 
-#todo: watch timeStart vs time_Start
+#todo: timeStart vs time_Start
 
 ip = "10.0.0.34"
 port = 6565
+calibTime = 10
 
 #Variable Initializations
 
@@ -295,252 +296,280 @@ async def main_loop():
                 
                 
             #----------------------SIGNAL FILTERING----------------------        
-        
-        
-        
-            #----------------------CALCULATING DX----------------------
-            #dx is calculated over the last X iterations of the loop
-            timeArray.append(time.time())
-            while len(timeArray) > averagingSeverity:
-                timeArray.pop(0)
+            
+            
+            
+            #----------------------CALIBRATION----------------------        
+            calibAngThigh = []
+            calibAngShank = []
+            calibAngHeel = []
+            
+            if int(time.time()) - int(timeStart) < int(calibTime):
                 
-            if len(timeArray) == 1:
-                dx = 1
-                deltaT = 1
+                calibAngThigh.append(tan(dd_x_t/dd_y_t))
+                calibAngShank.append(tan(dd_x_s/dd_y_s))
+                calibAngHeel.append(tan(dd_x_h/dd_y_h))
+         
+                thighOffset = sum(calibAngThigh) / len(calibAngThigh)
+                shankOffset = sum(calibAngThigh) / len(calibAngThigh)
+                heelOffset = sum(calibAngThigh) / len(calibAngThigh)
+            
+            elif int(time.time()) - int(timeStart) == int(calibTime):
+                
+                print("calibration complete")
+                print(f"Thigh: {thighOffset} | Shank: {shankOffset} | Heel: {heelOffset}")
+                
             else:
-                dx = timeArray[len(timeArray) - 1] - timeArray[0]
-                deltaT = dx/len(timeArray)
+                q_t -= thighOffset
+                q_s -= shankOffset
+                q_h -= hellOffset
                 
-            #dbg("dx",dx)
-            #dbg("deltaT",deltaT)
-
-
-            #----------------------CALCULATING ANGULAR ACCELERATIONS----------------------
-            #Distance between measurements for the last X iterations are averaged, then divided by the time needed.
-            #Heavily bump up averaging severity. Use function of averaging severity as window size for savgol function
-            
-            d_q_s_arr.append(d_q_s)
-            d_q_t_arr.append(d_q_t)
-            d_q_h_arr.append(d_q_h)
-
-            while len(d_q_s_arr) > averagingSeverity:
-                d_q_s_arr.pop(0)
-            while len(d_q_t_arr) > averagingSeverity:
-                d_q_t_arr.pop(0)
-            while len(d_q_h_arr) > averagingSeverity:
-                d_q_h_arr.pop(0)
+                #----------------------CALCULATING DX----------------------
+                #dx is calculated over the last X iterations of the loop
+                timeArray.append(time.time())
+                while len(timeArray) > averagingSeverity:
+                    timeArray.pop(0)
+                    
+                if len(timeArray) == 1:
+                    dx = 1
+                    deltaT = 1
+                else:
+                    dx = timeArray[len(timeArray) - 1] - timeArray[0]
+                    deltaT = dx/len(timeArray)
+                    
+                #dbg("dx",dx)
+                #dbg("deltaT",deltaT)
                 
-            dd_q_s_arr = np.diff(d_q_s_arr)
-            dd_q_t_arr = np.diff(d_q_t_arr)
-            dd_q_h_arr = np.diff(d_q_h_arr)
-
-            dd_q_s_old = dd_q_s
-            dd_q_t_old = dd_q_t
-            dd_q_h_old = dd_q_h
-
-            try:
-                dd_q_s = sum(dd_q_s_arr) / (len(dd_q_s_arr) * deltaT)
-                dd_q_t = sum(dd_q_t_arr) / (len(dd_q_t_arr) * deltaT)
-                dd_q_h = sum(dd_q_h_arr) / (len(dd_q_h_arr) * deltaT)
-            except ZeroDivisionError:
-                dd_q_s = 0
-                dd_q_t = 0
-                dd_q_h = 0
-            
-            #Using Savitzky-Golay Filter, implement for velocities as well? Could use .butter() instead
-
-            #dd_q_s = scipy.signal.savgol_filter(d_q_s_arr, 10, deriv=1, delta=deltaT)
-            #dd_q_t = scipy.signal.savgol_filter(d_q_t_arr, 10, deriv=1, delta=deltaT)
-
-            #dbg("dd_q_s",dd_q_s)
-            #dbg("dd_q_t",dd_q_t)
-            
-            
-            
-            
-            #----------------------CALCULATING VELOCITIES----------------------
-            
-            dd_x_h_arr.append(dd_x_h)
-            dd_x_p_arr.append(dd_x_p)
-
-            while len(dd_x_h_arr) > averagingSeverity:
-                dd_x_h_arr.pop(0)
-            while len(dd_x_p_arr) > averagingSeverity:
-                dd_x_p_arr.pop(0)
-
-            d_x_h_arr = integrate.cumtrapz(dd_x_h_arr, timeArray) #todo: zero time array
-            d_x_p_arr = integrate.cumtrapz(dd_x_p_arr, timeArray)
-
-            try:
-                d_x_h = sum(d_x_h_arr) / (len(d_x_h_arr) * deltaT)
-                d_x_p = sum(d_x_p_arr) / (len(d_x_p_arr) * deltaT)
-            except ZeroDivisionError:
-                d_x_h = 0
-                d_x_p = 0
                 
-            #dbg("d_x_h",d_x_h)
-            #dbg("d_x_p",d_x_p)
-
-
-
-
-            #----------------------SLIP INDICATOR CALCULATIONS----------------------
-            #DOUBLE CHECK ALGORITHM BITS IN HERE!
-            Xs1 = Ma * (((dd_q_s **2) * sin(q_s)) - (dd_q_s * cos(q_s)))
-            Xs2 = Mt * Lt * (((dd_q_t **2) * sin(q_t)) - (dd_q_t * cos(q_t)))
-            Xs = (Xs1 + Xs2) / M
-
-            #dbg("Xs",Xs)
-
-            x_hh = (Lt * sin(q_t)) + (Ls * sin(q_s))
-            y_hh = (Lt * cos(q_t)) + (Ls * cos(q_s))
-            L_hh = sqrt((x_hh**2) + (y_hh**2))
-
-            dd_q_hh = (dd_y_t - dd_x_h) / L_hh
-
-            slip_indicator = Xs / (beta ** (dd_q_hh - gamma))
-
-            #dbg("slip_indicator", slip_indicator)
-
-
-
-
-
-            #----------------------SLIP INDICATOR LOGIC----------------------
-            #also checks that algorithm has been running for at least five seconds before possible activation.
-            #This ensures that no errors will occur due to startup values before the algorithm obtains a moving average.
-            if slip_indicator >= slip_constant and time.time() - timeStart > 5:
-                trkov_slip_flag = True
-            else:
-                trkov_slip_flag = False
-
-
-
-
-            
-            #-----------------------------------------------------------------
-            #----------------------HEEL STRIKE DETECTION----------------------
-            #Detects bottom of downward spike in angular acceleration of the shank in sagittal plane
-            #IMU positioned on the outside of the shin
-            #TODO determine threshhold value dynamically (using 2/3 of a normalization value through filtering)
-            threshStrike = -50
-            
-            if d_q_s < threshStrike and dd_q_s > 0 and dd_q_s_old <= 0 and gait == 2:
-                gait = 0
+                #----------------------CALCULATING ANGULAR ACCELERATIONS----------------------
+                #Distance between measurements for the last X iterations are averaged, then divided by the time needed.
+                #Heavily bump up averaging severity. Use function of averaging severity as window size for savgol function
+                
+                d_q_s_arr.append(d_q_s)
+                d_q_t_arr.append(d_q_t)
+                d_q_h_arr.append(d_q_h)
+                
+                while len(d_q_s_arr) > averagingSeverity:
+                    d_q_s_arr.pop(0)
+                while len(d_q_t_arr) > averagingSeverity:
+                    d_q_t_arr.pop(0)
+                while len(d_q_h_arr) > averagingSeverity:
+                    d_q_h_arr.pop(0)
+                    
+                dd_q_s_arr = np.diff(d_q_s_arr)
+                dd_q_t_arr = np.diff(d_q_t_arr)
+                dd_q_h_arr = np.diff(d_q_h_arr)
+                
+                dd_q_s_old = dd_q_s
+                dd_q_t_old = dd_q_t
+                dd_q_h_old = dd_q_h
+                
+                try:
+                    dd_q_s = sum(dd_q_s_arr) / (len(dd_q_s_arr) * deltaT)
+                    dd_q_t = sum(dd_q_t_arr) / (len(dd_q_t_arr) * deltaT)
+                    dd_q_h = sum(dd_q_h_arr) / (len(dd_q_h_arr) * deltaT)
+                except ZeroDivisionError:
+                    dd_q_s = 0
+                    dd_q_t = 0
+                    dd_q_h = 0
+                
+                #Using Savitzky-Golay Filter, implement for velocities as well? Could use .butter() instead
+                
+                #dd_q_s = scipy.signal.savgol_filter(d_q_s_arr, 10, deriv=1, delta=deltaT)
+                #dd_q_t = scipy.signal.savgol_filter(d_q_t_arr, 10, deriv=1, delta=deltaT)
+                
+                #dbg("dd_q_s",dd_q_s)
+                #dbg("dd_q_t",dd_q_t)
                 
                 
                 
-            #--------------------------------------------------------------
-            #----------------------HEEL OFF DETECTION----------------------
-            #Detects top of upward spike in angular acceleration of the heel in sagittal plane
-            #IMU positioned on the inside of the heel
-            #TODO determine threshhold value dynamically
-                #start with a small threshhold, record each peak value, use peak value to modify the threshhold value that converges, with a variable deviation (ex. half? 3/4?)
-            threshOff = 50        
-            
-            if d_q_h > threshOff and dd_q_h < 0 and dd_q_h_old >= 0 and gait == 0:
-                gait = 1
                 
-
-            #--------------------------------------------------------------
-            #----------------------TOE OFF DETECTION-----------------------
-            #Detects return to zero after a downward spike in gyroscopic value in sagittal plane
-            #IMU positioned on the inside of the heel
-            #TODO use dynamic threshhold value to determine when peak is hit and, subsequently, when zero is hit.
-            threshToe = 50        
-            
-            if d_q_h < threshOff and dd_q_h > 0 and dd_q_h_old <= 0 and gait == 1:
-                gait = 2
-
-
-            #-----------------------------------------------------------------
-            #----------------------SYSTEM ACTIVATION--------------------------		
-            #Functions imported from ./activate.py
-            #dbg("gait", gait)
-            if trkov_slip_flag and gait == 0 and time.time() - time_activated > 5:
-                ardno("ac")
-                time_activated = time.time()
-                print("activated")
+                #----------------------CALCULATING VELOCITIES----------------------
                 
-            #-------------------------------------------------------------------
-            #----------------------EKF - SLIP START VALUES----------------------
-
-                q_s_Start = q_s
-                q_t_Start = q_t
-                time_Start = time.time()
-                x_h = 0
-                #fpkk.write("SLIP START DETECTED")
-                #fpkk.write('\n')
-                fxkk.write("SLIP START DETECTED")
-                fxkk.write('\n') 
+                dd_x_h_arr.append(dd_x_h)
+                dd_x_p_arr.append(dd_x_p)
                 
-
-            #----------------------EKF CALCULATIONS----------------------
-            if gait == 0 and time.time() - time_activated < 5:
-                Y = np.array([dd_x_h, d_x_h, x_h])
-                xkk = np.array([[x_h], [d_x_h], [q_s], [q_t]])
-                pkk = np.zeros(4, 4)
-
-                x_h = xkk(1)
-                d_x_h = xkk(2)
-                q_s = xkk(3)
-                q_t = xkk(4)
-
-                Ftheta23 = ( M1 * a_s + M2 * L2 ) / Msum * ( cos(q_s) * d_q_s**2 + dd_q_s * sin(q_s) )
-                Ftheta24 = ( M2 * L2 ) / Msum * ( cos(q_t) * d_q_t**2 + dd_q_t * sin(q_t))
-
-                Ftheta = np.array([[0,1,0,0],[0,0,Ftheta23,Ftheta24],[0,0,0, 0],[0,0,0,0]])
-
-                F = np.zeros(4, 4) + deltaT * Ftheta
-
-                xkk_1 = xkk + deltaT * np.array([[d_x_h],[dd_x_h],[d_q_s],[d_q_t]])
-                pkk_1 = F * pkk * np.transpose(F) + Q
-
-                x_h = xkk_1(1)
-                d_x_h = xkk_1(2)
-                q_s = xkk_1(3)
-                q_t = xkk_1(4)
-            
-            #-------------------------------------------------------------#
-
-                h11 = 0
-                h12 = 0
-                h13 = ( M1 * a_s + M2 * L2 ) / Msum * ( cos(q_s) * d_q_s**2 + dd_q_s * sin(q_s) )
-                h14 = ( M2 * L2 ) / Msum * ( cos(q_t) * d_q_t**2 + dd_q_t * sin(q_t) )
-
-                h21 = 0
-                h22 = -1
-                h23 = L1 * d_q_s * sin(q_s)
-                h24 = L2 * d_q_t * sin(q_t)
-
-                h31 = -1
-                h32 = 0
-                h33 = -L1 * cos(q_s)
-                h34 = -L2 * cos(q_t)
-
-                H = np.array([[h11, h12, h13, h14],[h21, h22, h23, h24],[h31, h32, h33, h34]])
-
-            #-------------------------------------------------------------#
-            
-                dd_x_h_kin = ( sin(q_s) * ( M1 * a_s + L1 * M2 ) * d_q_s**2 + M2 * a_t * sin(q_t) * d_q_t**2 - dd_q_s * cos(q_s) * ( M1 * a_s + L1 * M2 ) - M2 * a_t * dd_q_t * cos(q_t) ) / (M1 + M2);
-                d_x_h_kin = d_x_hip - L1 * d_q_1 * cos(q_s) - L2 * d_q_t * cos(q_t) - d_x_h;
-                x_h_kin = d_x_hip * deltaT * (time.time() - time_Start) - L1 * sin(q_s) - L2 * sin(q_t) - ( -L1 * sin(q_s_Start) - L2 * sin(q_t_Start)) - x_h;
-
-                Yhat = np.transpose(Y) - np.array[ [dd_x_h_kin],[d_x_h_kin],[x_h_kin] ]
-
-                S = H * pkk_1 * np.transpose(H) + R
-                K = pkk_1 * np.transpose(H) / S
-
-                xkk = xkk_1 + K * Yhat
-                pkk = ( np.zeros(4, 4) - K * H ) * pkk_1
-
-                #fpkk.write(pkk)
-                #fpkk.write('\n')
-                #fxkk.write(xkk)
-                #fxkk.write('\n')
-            elif time.time() - time_activated > 5:
-                #force end slip after 5 seconds
-                pass
+                while len(dd_x_h_arr) > averagingSeverity:
+                    dd_x_h_arr.pop(0)
+                while len(dd_x_p_arr) > averagingSeverity:
+                    dd_x_p_arr.pop(0)
+                
+                d_x_h_arr = integrate.cumtrapz(dd_x_h_arr, timeArray) #todo: zero time array
+                d_x_p_arr = integrate.cumtrapz(dd_x_p_arr, timeArray)
+                
+                try:
+                    d_x_h = sum(d_x_h_arr) / (len(d_x_h_arr) * deltaT)
+                    d_x_p = sum(d_x_p_arr) / (len(d_x_p_arr) * deltaT)
+                except ZeroDivisionError:
+                    d_x_h = 0
+                    d_x_p = 0
+                    
+                #dbg("d_x_h",d_x_h)
+                #dbg("d_x_p",d_x_p)
+                
+                
+                
+                
+                #----------------------SLIP INDICATOR CALCULATIONS----------------------
+                #DOUBLE CHECK ALGORITHM BITS IN HERE!
+                Xs1 = Ma * (((dd_q_s **2) * sin(q_s)) - (dd_q_s * cos(q_s)))
+                Xs2 = Mt * Lt * (((dd_q_t **2) * sin(q_t)) - (dd_q_t * cos(q_t)))
+                Xs = (Xs1 + Xs2) / M
+                
+                #dbg("Xs",Xs)
+                
+                x_hh = (Lt * sin(q_t)) + (Ls * sin(q_s))
+                y_hh = (Lt * cos(q_t)) + (Ls * cos(q_s))
+                L_hh = sqrt((x_hh**2) + (y_hh**2))
+                
+                dd_q_hh = (dd_y_t - dd_x_h) / L_hh
+                
+                slip_indicator = Xs / (beta ** (dd_q_hh - gamma))
+                
+                
+                print(slip_indicator)
+                
+                #dbg("slip_indicator", slip_indicator)
+                
+                
+                
+                
+                
+                #----------------------SLIP INDICATOR LOGIC----------------------
+                #also checks that algorithm has been running for at least five seconds before possible activation.
+                #This ensures that no errors will occur due to startup values before the algorithm obtains a moving average.
+                if slip_indicator >= slip_constant and time.time() - timeStart > 5:
+                    trkov_slip_flag = True
+                else:
+                    trkov_slip_flag = False
+                
+                
+                
+                
+                
+                #-----------------------------------------------------------------
+                #----------------------HEEL STRIKE DETECTION----------------------
+                #Detects bottom of downward spike in angular acceleration of the shank in sagittal plane
+                #IMU positioned on the outside of the shin
+                #TODO determine threshhold value dynamically (using 2/3 of a normalization value through filtering)
+                threshStrike = -50
+                
+                if d_q_s < threshStrike and dd_q_s > 0 and dd_q_s_old <= 0 and gait == 2:
+                    gait = 0
+                    
+                    
+                    
+                #--------------------------------------------------------------
+                #----------------------HEEL OFF DETECTION----------------------
+                #Detects top of upward spike in angular acceleration of the heel in sagittal plane
+                #IMU positioned on the inside of the heel
+                #TODO determine threshhold value dynamically
+                    #start with a small threshhold, record each peak value, use peak value to modify the threshhold value that converges, with a variable deviation (ex. half? 3/4?)
+                threshOff = 50        
+                
+                if d_q_h > threshOff and dd_q_h < 0 and dd_q_h_old >= 0 and gait == 0:
+                    gait = 1
+                    
+                
+                #--------------------------------------------------------------
+                #----------------------TOE OFF DETECTION-----------------------
+                #Detects return to zero after a downward spike in gyroscopic value in sagittal plane
+                #IMU positioned on the inside of the heel
+                #TODO use dynamic threshhold value to determine when peak is hit and, subsequently, when zero is hit.
+                threshToe = 50        
+                
+                if d_q_h < threshOff and dd_q_h > 0 and dd_q_h_old <= 0 and gait == 1:
+                    gait = 2
+                
+                
+                #-----------------------------------------------------------------
+                #----------------------SYSTEM ACTIVATION--------------------------		
+                #Functions imported from ./activate.py
+                #dbg("gait", gait)
+                if trkov_slip_flag and gait == 0 and time.time() - time_activated > 5:
+                    ardno("ac")
+                    time_activated = time.time()
+                    print("activated")
+                    
+                #-------------------------------------------------------------------
+                #----------------------EKF - SLIP START VALUES----------------------
+                
+                    q_s_Start = q_s
+                    q_t_Start = q_t
+                    time_Start = time.time()
+                    x_h = 0
+                    #fpkk.write("SLIP START DETECTED")
+                    #fpkk.write('\n')
+                    fxkk.write("SLIP START DETECTED")
+                    fxkk.write('\n') 
+                    
+                
+                #----------------------EKF CALCULATIONS----------------------
+                if gait == 0 and time.time() - time_activated < 5:
+                    Y = np.array([dd_x_h, d_x_h, x_h])
+                    xkk = np.array([[x_h], [d_x_h], [q_s], [q_t]])
+                    pkk = np.zeros(4, 4)
+                
+                    x_h = xkk(1)
+                    d_x_h = xkk(2)
+                    q_s = xkk(3)
+                    q_t = xkk(4)
+                
+                    Ftheta23 = ( M1 * a_s + M2 * L2 ) / Msum * ( cos(q_s) * d_q_s**2 + dd_q_s * sin(q_s) )
+                    Ftheta24 = ( M2 * L2 ) / Msum * ( cos(q_t) * d_q_t**2 + dd_q_t * sin(q_t))
+                
+                    Ftheta = np.array([[0,1,0,0],[0,0,Ftheta23,Ftheta24],[0,0,0, 0],[0,0,0,0]])
+                
+                    F = np.zeros(4, 4) + deltaT * Ftheta
+                
+                    xkk_1 = xkk + deltaT * np.array([[d_x_h],[dd_x_h],[d_q_s],[d_q_t]])
+                    pkk_1 = F * pkk * np.transpose(F) + Q
+                
+                    x_h = xkk_1(1)
+                    d_x_h = xkk_1(2)
+                    q_s = xkk_1(3)
+                    q_t = xkk_1(4)
+                
+                #-------------------------------------------------------------#
+                
+                    h11 = 0
+                    h12 = 0
+                    h13 = ( M1 * a_s + M2 * L2 ) / Msum * ( cos(q_s) * d_q_s**2 + dd_q_s * sin(q_s) )
+                    h14 = ( M2 * L2 ) / Msum * ( cos(q_t) * d_q_t**2 + dd_q_t * sin(q_t) )
+                
+                    h21 = 0
+                    h22 = -1
+                    h23 = L1 * d_q_s * sin(q_s)
+                    h24 = L2 * d_q_t * sin(q_t)
+                
+                    h31 = -1
+                    h32 = 0
+                    h33 = -L1 * cos(q_s)
+                    h34 = -L2 * cos(q_t)
+                
+                    H = np.array([[h11, h12, h13, h14],[h21, h22, h23, h24],[h31, h32, h33, h34]])
+                
+                #-------------------------------------------------------------#
+                
+                    dd_x_h_kin = ( sin(q_s) * ( M1 * a_s + L1 * M2 ) * d_q_s**2 + M2 * a_t * sin(q_t) * d_q_t**2 - dd_q_s * cos(q_s) * ( M1 * a_s + L1 * M2 ) - M2 * a_t * dd_q_t * cos(q_t) ) / (M1 + M2);
+                    d_x_h_kin = d_x_hip - L1 * d_q_1 * cos(q_s) - L2 * d_q_t * cos(q_t) - d_x_h;
+                    x_h_kin = d_x_hip * deltaT * (time.time() - time_Start) - L1 * sin(q_s) - L2 * sin(q_t) - ( -L1 * sin(q_s_Start) - L2 * sin(q_t_Start)) - x_h;
+                
+                    Yhat = np.transpose(Y) - np.array[ [dd_x_h_kin],[d_x_h_kin],[x_h_kin] ]
+                
+                    S = H * pkk_1 * np.transpose(H) + R
+                    K = pkk_1 * np.transpose(H) / S
+                
+                    xkk = xkk_1 + K * Yhat
+                    pkk = ( np.zeros(4, 4) - K * H ) * pkk_1
+                
+                    #fpkk.write(pkk)
+                    #fpkk.write('\n')
+                    #fxkk.write(xkk)
+                    #fxkk.write('\n')
+                elif time.time() - time_activated > 5:
+                    #force end slip after 5 seconds
+                    pass
                 
         await asyncio.sleep(0)
         
