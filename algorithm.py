@@ -204,8 +204,9 @@ def ardno(msg):
 
 async def main_loop():
     global packetReady, passToAlgorithm
-    print(passToAlgorithm)
+    #print(passToAlgorithm)
     
+    #-----------------------------------------------------------------
     #----------------------USER INPUT----------------------
     mass = 5 #kg
     height = 10 #cm
@@ -216,13 +217,15 @@ async def main_loop():
     
     process_variance = 10
 
-
+    
+    #-----------------------------------------------------------------
     #----------------------TESTED CONSTANTS----------------------
     slip_constant = 2.83 or 1.87
     beta = 2.718
     gamma = -562 or -377 #deg/s
 
 
+    #-----------------------------------------------------------------
     #----------------------CALCULATED LIMB LENGTHS----------------------
     #David A. Winter, "Biomechanics and Motor Control of Human Movement" (2009)
 
@@ -253,6 +256,7 @@ async def main_loop():
     c_s = 0.433 * Ls  #measured top down (proximal)
 
 
+    #-----------------------------------------------------------------
     #----------------------NECESSARY VARIABLE DECLARATIONS----------------------
     d_q_s_arr  = []
     d_q_t_arr  = []
@@ -290,13 +294,14 @@ async def main_loop():
     dd_x_p_std_arr = []
 
     timeStart = time.time() #use this value (plus a date if its not included) to create a filename for results.
-    time_activated = time.time()
+    time_slip_start = time.time()
 
     Q = np.array([[0.1*1000,0,0,0],[0,0.1*10,0,0],[0,0,0.1/10,0],[0,0,0,0.1/10]])
                      
     R = np.array([[25/10,0,0], [0,0.00001*5, 0],[0,0,0.0001*5]])
     
     
+    #-----------------------------------------------------------------
     #----------------------MAIN LOOP----------------------
     while True:
         if packetReady == True:
@@ -328,19 +333,17 @@ async def main_loop():
         
             q_s = s_ang[0]
             q_t = t_ang[0]
-            q_h = h_ang[0]
-                
-                
-                
-            #----------------------SIGNAL FILTERING----------------------        
+            q_h = h_ang[0]     
             
             
-            
+            #-----------------------------------------------------------------
             #----------------------CALIBRATION----------------------
             
             if int(time.time()) - int(timeStart) < int(calibTime):
                 
-                #Angle Calibration
+                
+                #-----------------------------------------------------------------
+                #---------------------------Angle Calibration----------------------
                 
                 calibAngThigh.append(tan(dd_x_t/dd_y_t))
                 calibAngShank.append(tan(dd_x_s/dd_y_s))
@@ -350,7 +353,9 @@ async def main_loop():
                 shankOffset = sum(calibAngThigh) / len(calibAngThigh)
                 heelOffset = sum(calibAngThigh) / len(calibAngThigh)
                 
-                #Kalman Calibration
+                
+                #-----------------------------------------------------------------
+                #---------------------Kalman Calibration---------------------
                 
                 dd_x_t_std_arr.append(dd_x_t)
                 dd_y_t_std_arr.append(dd_y_t)
@@ -364,7 +369,9 @@ async def main_loop():
             
             elif int(time.time()) - int(timeStart) >= int(calibTime) and int(time.time()) - int(timeStart) >= int(calibTime) + 0.1:
                 
-                #Kalman Calibration Calculate and Save
+                
+                #-----------------------------------------------------------------
+                #----------------------Kalman Calibration Calculate and Save---------------
                 
                 dd_x_t_variance = (numpy.std(dd_x_t_std_arr)) ** 2
                 kalman_dd_x_t = KalmanFilter(process_variance, dd_x_t_variance)
@@ -396,13 +403,18 @@ async def main_loop():
                 print("calibration complete")
                 print(f"Thigh: {thighOffset} | Shank: {shankOffset} | Heel: {heelOffset}")
                 
+                
             else:
                 
+                
+                #-----------------------------------------------------------------
                 #----------------------APPLY ANGLE CALIBRATION----------------------
                 q_t -= thighOffset
                 q_s -= shankOffset
                 q_h -= hellOffset
                 
+                
+                #-----------------------------------------------------------------
                 #----------------------APPLY KALMAN FILTER----------------------
                 
                 kalman_dd_x_t.input_latest_noisy_measurement(dd_x_t)
@@ -432,24 +444,9 @@ async def main_loop():
                 kalman_dd_x_p.input_latest_noisy_measurement(dd_x_p)
                 dd_x_p = kalman_dd_x_p.get_latest_estimated_measurement()
                 
-                #----------------------CALCULATING DX----------------------
-                #dx is calculated over the last X iterations of the loop
-                timeArray.append(time.time())
-                while len(timeArray) > averagingSeverity:
-                    timeArray.pop(0)
-                    
-                if len(timeArray) == 1:
-                    dx = 1
-                    deltaT = 1
-
-                else:
-                    dx = timeArray[len(timeArray) - 1] - timeArray[0]
-                    deltaT = dx/len(timeArray)
-                    
-                #dbg("dx",dx)
-                #dbg("deltaT",deltaT)
                 
                 
+                #-----------------------------------------------------------------
                 #----------------------CALCULATING ANGULAR ACCELERATIONS----------------------
                 #Distance between measurements for the last X iterations are averaged, then divided by the time needed.
                 #Heavily bump up averaging severity. Use function of averaging severity as window size for savgol function
@@ -477,9 +474,9 @@ async def main_loop():
                 dd_q_h_old = dd_q_h
                 
                 try:
-                    dd_q_s = sum(dd_q_s_arr) / (len(dd_q_s_arr) * deltaT)
-                    dd_q_t = sum(dd_q_t_arr) / (len(dd_q_t_arr) * deltaT)
-                    dd_q_h = sum(dd_q_h_arr) / (len(dd_q_h_arr) * deltaT)
+                    dd_q_s = sum(dd_q_s_arr) / (len(dd_q_s_arr))
+                    dd_q_t = sum(dd_q_t_arr) / (len(dd_q_t_arr))
+                    dd_q_h = sum(dd_q_h_arr) / (len(dd_q_h_arr))
                 except ZeroDivisionError:
                     dd_q_s = 0
                     dd_q_t = 0
@@ -496,6 +493,7 @@ async def main_loop():
                 
                 
                 
+                #-----------------------------------------------------------------
                 #----------------------CALCULATING VELOCITIES----------------------
                 #dd_x_
                 
@@ -523,8 +521,8 @@ async def main_loop():
                 
                 
                 
+                #-----------------------------------------------------------------
                 #----------------------SLIP INDICATOR CALCULATIONS----------------------
-                #DOUBLE CHECK ALGORITHM BITS IN HERE!
                 Xs1 = Ma * (((d_q_s ** 2) * sin(q_s)) - (dd_q_s * cos(q_s)))
                 Xs2 = Mt * Lt * (((d_q_t ** 2) * sin(q_t)) - (dd_q_t * cos(q_t)))
                 Xs = (Xs1 + Xs2) / M
@@ -558,6 +556,7 @@ async def main_loop():
                 
                 
                 
+                
                 #-----------------------------------------------------------------
                 #----------------------HEEL STRIKE DETECTION----------------------
                 #Detects bottom of downward spike in angular acceleration of the shank in sagittal plane
@@ -567,6 +566,7 @@ async def main_loop():
                 
                 if d_q_s < threshStrike and dd_q_s > 0 and dd_q_s_old <= 0 and gait == 2:
                     gait = 0
+                    
                     
                     
                     
@@ -582,6 +582,7 @@ async def main_loop():
                     gait = 1
                     
                 
+                
                 #--------------------------------------------------------------
                 #----------------------TOE OFF DETECTION-----------------------
                 #Detects return to zero after a downward spike in gyroscopic value in sagittal plane
@@ -593,14 +594,17 @@ async def main_loop():
                     gait = 2
                 
                 
+                
+                
                 #-----------------------------------------------------------------
                 #----------------------SYSTEM ACTIVATION--------------------------		
-                #Functions imported from ./activate.py
                 #dbg("gait", gait)
                 if trkov_slip_flag and gait == 0:
                     ardno("ac")
-                    time_activated = time.time()
                     print("activated")
+                    
+                    
+                    
                     
                 #-------------------------------------------------------------------
                 #----------------------EKF - SLIP START VALUES----------------------
@@ -609,13 +613,13 @@ async def main_loop():
                     q_t_Start = q_t
                     time_slip_start = time.time()
                     x_h = 0
-                    fxkk.write("SLIP START DETECTED")
-                    fxkk.write('\n')
+
                     
-                
+                    
+                #-----------------------------------------------------------------
                 #----------------------EKF CALCULATIONS----------------------
                 slipTime = 4
-                if gait == 0 and time.time() - time_activated < slipTime:
+                if gait == 0 and time.time() - time_slip_start < slipTime:
                     Y = np.array([dd_x_h, d_x_h, x_h])
                     xkk = np.array([[x_h], [d_x_h], [q_s], [q_t]])
                     pkk = np.zeros(4, 4)
@@ -672,14 +676,9 @@ async def main_loop():
                 
                     xkk = xkk_1 + K * Yhat
                     pkk = ( np.zeros(4, 4) - K * H ) * pkk_1
-                
-                    #fpkk.write(pkk)
-                    #fpkk.write('\n')
-                    #fxkk.write(xkk)
-                    #fxkk.write('\n')
-                elif time.time() - time_activated > 5:
-                    #force end slip after 5 seconds
-                    pass
+                    
+                    xkk_arr.append(xkk)
+                    pkk_arr.append(pkk)
                 
         await asyncio.sleep(0)   
 
