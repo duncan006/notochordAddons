@@ -8,16 +8,18 @@ from math import sin, cos, sqrt
 from scipy import integrate
 from scipy.spatial.transform import Rotation as R
 import numpy as np
+
 global varType, dataDict, flagDict, qDataDict, qFlagDict, trueFlagDict, packetReady, passToAlgorithm, qPacketReady, ePacketReady
+global startTime, dd_x_t_std_arr, outputVal_arr, kalman_dd_x_t
+
 packetReady = False
 ePacketReady = False
 qPacketReady = False
 
-#todo: timeStart vs time_Start
 
 ip = "10.0.0.34"
 port = 6565
-calibTime = 10
+calibTime = 2
 
 #Variable Initializations
 
@@ -40,7 +42,6 @@ qDataDict = {
 	"rShank":  [],
 	"rHeel":  [],
 	"lowBack":  [],
-
 }
 
 flagDict = {
@@ -81,14 +82,36 @@ passToAlgorithm = {
     "h_ang": [],
 }
 
+class KalmanFilter(object):
+
+    def __init__(self, process_variance, estimated_measurement_variance):
+        self.process_variance = process_variance
+        self.estimated_measurement_variance = estimated_measurement_variance
+        self.posteri_estimate = 0.0
+        self.posteri_error_estimate = 1.0
+
+    def input_latest_noisy_measurement(self, measurement):
+        priori_estimate = self.posteri_estimate
+        priori_error_estimate = self.posteri_error_estimate + self.process_variance
+
+        blending_factor = priori_error_estimate / (priori_error_estimate + self.estimated_measurement_variance)
+        self.posteri_estimate = priori_estimate + blending_factor * (measurement - priori_estimate)
+        self.posteri_error_estimate = (1 - blending_factor) * priori_error_estimate
+
+    def get_latest_estimated_measurement(self):
+        return self.posteri_estimate
+
+
 def package_handler_raw(tup):
     
     out = []
-        
-    out.append(tup[2])    #gyz
-    out.append(tup[3])    #acx
-    out.append(tup[4])    #acy
-    out.append(tup[5])    #acz
+    
+    #out.append(tup[0])    #gy_x
+    #out.append(tup[1])    #gy_y   
+    out.append(tup[2])    #gy_z
+    out.append(tup[3])    #ac_x
+    out.append(tup[4])    #ac_y
+    out.append(tup[5])    #ac_z
     
     return out
 
@@ -107,6 +130,8 @@ def package_handler_q(tup):
     r = R.from_quat([x,y,z,w])
     e = r.as_euler('xyz', degrees=False)
     
+    #out.append(e[0]) #x-axis euler
+    #out.append(e[1]) #y-axis euler
     out.append(e[2]) #z-axis euler
     
     return out
@@ -134,7 +159,7 @@ def data_handler(address, *args):
             flagDict[limb] = True
         
         if qFlagDict == trueFlagDict:
-            for x in range(4):
+            for x in range(len(qFlagDict) - 1):
                 out.append(qDataDict[orderDict[x]])
                     
             for x in qFlagDict:
@@ -143,7 +168,7 @@ def data_handler(address, *args):
             qPacketReady = True
         
         if flagDict == trueFlagDict:
-            for x in range(4):
+            for x in range(len(flagDict) - 1):
                 out.append(dataDict[orderDict[x]])
                     
             for x in flagDict:
@@ -163,7 +188,6 @@ def data_handler(address, *args):
         passToAlgorithm["s_ang"] = qDataDict["rShank"]
         passToAlgorithm["h_ang"] = qDataDict["rHeel"]
         packetReady = True
-
 
 
 def default_handler(address, *args):
@@ -189,9 +213,8 @@ async def main_loop():
 
     debugging_output = False
     detectWindow = .5
-
-    PORT = 30001
-    IP = "localhost"
+    
+    process_variance = 10
 
 
     #----------------------TESTED CONSTANTS----------------------
@@ -231,18 +254,18 @@ async def main_loop():
 
 
     #----------------------NECESSARY VARIABLE DECLARATIONS----------------------
-    d_q_s_arr = []
-    d_q_t_arr = []
-    d_q_h_arr = []
+    d_q_s_arr  = []
+    d_q_t_arr  = []
+    d_q_h_arr  = []
     dd_q_s_arr = []
     dd_q_t_arr = []
     dd_q_h_arr = []
 
-    d_x_p_arr = []
-    d_x_h_arr = []
+    d_x_p_arr  = []
+    d_x_h_arr  = []
     dd_x_h_arr = []
     dd_x_p_arr = []
-    timeArray = []
+    timeArray  = []
 
     dd_q_s = 0
     dd_q_t = 0
@@ -251,6 +274,20 @@ async def main_loop():
     # 0: Heel Strike
     # 1: Heel Off
     # 2: Toe Off
+    
+    calibAngThigh = []
+    calibAngShank = []
+    calibAngHeel  = []
+    
+    dd_x_t_std_arr = []
+    dd_y_t_std_arr = []
+    d_q_t_std_arr  = []
+    dd_x_s_std_arr = []
+    dd_y_s_std_arr = []
+    d_q_s_std_arr  = []
+    dd_x_h_std_arr = []
+    d_q_h_std_arr  = []
+    dd_x_p_std_arr = []
 
     timeStart = time.time() #use this value (plus a date if its not included) to create a filename for results.
     time_activated = time.time()
@@ -299,12 +336,11 @@ async def main_loop():
             
             
             
-            #----------------------CALIBRATION----------------------        
-            calibAngThigh = []
-            calibAngShank = []
-            calibAngHeel = []
+            #----------------------CALIBRATION----------------------
             
             if int(time.time()) - int(timeStart) < int(calibTime):
+                
+                #Angle Calibration
                 
                 calibAngThigh.append(tan(dd_x_t/dd_y_t))
                 calibAngShank.append(tan(dd_x_s/dd_y_s))
@@ -313,16 +349,88 @@ async def main_loop():
                 thighOffset = sum(calibAngThigh) / len(calibAngThigh)
                 shankOffset = sum(calibAngThigh) / len(calibAngThigh)
                 heelOffset = sum(calibAngThigh) / len(calibAngThigh)
+                
+                #Kalman Calibration
+                
+                dd_x_t_std_arr.append(dd_x_t)
+                dd_y_t_std_arr.append(dd_y_t)
+                d_q_t_std_arr.append(d_q_t)
+                dd_x_s_std_arr.append(dd_x_s)
+                dd_y_s_std_arr.append(dd_y_s)
+                d_q_s_std_arr.append(d_q_s)
+                dd_x_h_std_arr.append(dd_x_h)
+                d_q_h_std_arr.append(d_q_h)
+                dd_x_p_std_arr.append(dd_x_p)
             
-            elif int(time.time()) - int(timeStart) == int(calibTime):
+            elif int(time.time()) - int(timeStart) >= int(calibTime) and int(time.time()) - int(timeStart) >= int(calibTime) + 0.1:
+                
+                #Kalman Calibration Calculate and Save
+                
+                dd_x_t_variance = (numpy.std(dd_x_t_std_arr)) ** 2
+                kalman_dd_x_t = KalmanFilter(process_variance, dd_x_t_variance)
+                
+                dd_y_t_variance = (numpy.std(dd_y_t_std_arr)) ** 2
+                kalman_dd_y_t = KalmanFilter(process_variance, dd_y_t_variance)
+                
+                d_q_t_variance = (numpy.std(d_q_t_std_arr)) ** 2
+                kalman_d_q_t = KalmanFilter(process_variance, d_q_t_variance)
+                
+                dd_x_s_variance = (numpy.std(dd_x_s_std_arr)) ** 2
+                kalman_dd_x_s = KalmanFilter(process_variance, dd_x_s_variance)
+                
+                dd_y_s_variance = (numpy.std(dd_y_s_std_arr)) ** 2
+                kalman_dd_y_s = KalmanFilter(process_variance, dd_y_s_variance)
+                
+                d_q_s_variance = (numpy.std(d_q_s_std_arr)) ** 2
+                kalman_d_q_s = KalmanFilter(process_variance, d_q_s_variance)
+                
+                dd_x_h_variance = (numpy.std(dd_x_h_std_arr)) ** 2
+                kalman_dd_x_h = KalmanFilter(process_variance, dd_x_h_variance)
+                
+                d_q_h_variance = (numpy.std(d_q_h_std_arr)) ** 2
+                kalman_d_q_h = KalmanFilter(process_variance, d_q_h_variance)
+                
+                dd_x_p_variance = (numpy.std(dd_x_p_std_arr)) ** 2
+                kalman_dd_x_p = KalmanFilter(process_variance, dd_x_p_variance)
                 
                 print("calibration complete")
                 print(f"Thigh: {thighOffset} | Shank: {shankOffset} | Heel: {heelOffset}")
                 
             else:
+                
+                #----------------------APPLY ANGLE CALIBRATION----------------------
                 q_t -= thighOffset
                 q_s -= shankOffset
                 q_h -= hellOffset
+                
+                #----------------------APPLY KALMAN FILTER----------------------
+                
+                kalman_dd_x_t.input_latest_noisy_measurement(dd_x_t)
+                dd_x_t = kalman_dd_x_t.get_latest_estimated_measurement()
+                
+                kalman_dd_y_t.input_latest_noisy_measurement(dd_y_t)
+                dd_y_t = kalman_dd_y_t.get_latest_estimated_measurement()
+                
+                kalman_d_q_t.input_latest_noisy_measurement(d_q_t)
+                d_q_t = kalman_d_q_t.get_latest_estimated_measurement()
+                
+                kalman_dd_x_s.input_latest_noisy_measurement(dd_x_s)
+                dd_x_s = kalman_dd_x_s.get_latest_estimated_measurement()
+                
+                kalman_dd_y_s.input_latest_noisy_measurement(dd_y_s)
+                dd_y_s = kalman_dd_y_s.get_latest_estimated_measurement()
+                
+                kalman_d_q_s.input_latest_noisy_measurement(d_q_s)
+                d_q_s = kalman_d_q_s.get_latest_estimated_measurement()
+                
+                kalman_dd_x_h.input_latest_noisy_measurement(dd_x_h)
+                dd_x_h = kalman_dd_x_h.get_latest_estimated_measurement()
+                
+                kalman_d_q_h.input_latest_noisy_measurement(d_q_h)
+                d_q_h = kalman_d_q_h.get_latest_estimated_measurement()
+                
+                kalman_dd_x_p.input_latest_noisy_measurement(dd_x_p)
+                dd_x_p = kalman_dd_x_p.get_latest_estimated_measurement()
                 
                 #----------------------CALCULATING DX----------------------
                 #dx is calculated over the last X iterations of the loop
@@ -333,6 +441,7 @@ async def main_loop():
                 if len(timeArray) == 1:
                     dx = 1
                     deltaT = 1
+
                 else:
                     dx = timeArray[len(timeArray) - 1] - timeArray[0]
                     deltaT = dx/len(timeArray)
@@ -344,6 +453,9 @@ async def main_loop():
                 #----------------------CALCULATING ANGULAR ACCELERATIONS----------------------
                 #Distance between measurements for the last X iterations are averaged, then divided by the time needed.
                 #Heavily bump up averaging severity. Use function of averaging severity as window size for savgol function
+                #d_q_t --> dd_q_t
+                #d_q_s --> dd_q_s
+                #d_q_h --> dd_q_h
                 
                 d_q_s_arr.append(d_q_s)
                 d_q_t_arr.append(d_q_t)
@@ -385,6 +497,7 @@ async def main_loop():
                 
                 
                 #----------------------CALCULATING VELOCITIES----------------------
+                #dd_x_
                 
                 dd_x_h_arr.append(dd_x_h)
                 dd_x_p_arr.append(dd_x_p)
@@ -412,8 +525,8 @@ async def main_loop():
                 
                 #----------------------SLIP INDICATOR CALCULATIONS----------------------
                 #DOUBLE CHECK ALGORITHM BITS IN HERE!
-                Xs1 = Ma * (((dd_q_s **2) * sin(q_s)) - (dd_q_s * cos(q_s)))
-                Xs2 = Mt * Lt * (((dd_q_t **2) * sin(q_t)) - (dd_q_t * cos(q_t)))
+                Xs1 = Ma * (((d_q_s ** 2) * sin(q_s)) - (dd_q_s * cos(q_s)))
+                Xs2 = Mt * Lt * (((d_q_t ** 2) * sin(q_t)) - (dd_q_t * cos(q_t)))
                 Xs = (Xs1 + Xs2) / M
                 
                 #dbg("Xs",Xs)
@@ -427,23 +540,21 @@ async def main_loop():
                 slip_indicator = Xs / (beta ** (dd_q_hh - gamma))
                 
                 
-                print(slip_indicator)
+                print(f"slip_indicator {slip_indicator}")
                 
                 #dbg("slip_indicator", slip_indicator)
                 
                 
                 
                 
-                
+                #-----------------------------------------------------------------
                 #----------------------SLIP INDICATOR LOGIC----------------------
-                #also checks that algorithm has been running for at least five seconds before possible activation.
+                #also checks that algorithm has been running until calibration is complete.
                 #This ensures that no errors will occur due to startup values before the algorithm obtains a moving average.
-                if slip_indicator >= slip_constant and time.time() - timeStart > 5:
+                if slip_indicator >= slip_constant and time.time() - timeStart > calibTime:
                     trkov_slip_flag = True
                 else:
                     trkov_slip_flag = False
-                
-                
                 
                 
                 
@@ -486,7 +597,7 @@ async def main_loop():
                 #----------------------SYSTEM ACTIVATION--------------------------		
                 #Functions imported from ./activate.py
                 #dbg("gait", gait)
-                if trkov_slip_flag and gait == 0 and time.time() - time_activated > 5:
+                if trkov_slip_flag and gait == 0:
                     ardno("ac")
                     time_activated = time.time()
                     print("activated")
@@ -496,16 +607,15 @@ async def main_loop():
                 
                     q_s_Start = q_s
                     q_t_Start = q_t
-                    time_Start = time.time()
+                    time_slip_start = time.time()
                     x_h = 0
-                    #fpkk.write("SLIP START DETECTED")
-                    #fpkk.write('\n')
                     fxkk.write("SLIP START DETECTED")
-                    fxkk.write('\n') 
+                    fxkk.write('\n')
                     
                 
                 #----------------------EKF CALCULATIONS----------------------
-                if gait == 0 and time.time() - time_activated < 5:
+                slipTime = 4
+                if gait == 0 and time.time() - time_activated < slipTime:
                     Y = np.array([dd_x_h, d_x_h, x_h])
                     xkk = np.array([[x_h], [d_x_h], [q_s], [q_t]])
                     pkk = np.zeros(4, 4)
@@ -551,9 +661,9 @@ async def main_loop():
                 
                 #-------------------------------------------------------------#
                 
-                    dd_x_h_kin = ( sin(q_s) * ( M1 * a_s + L1 * M2 ) * d_q_s**2 + M2 * a_t * sin(q_t) * d_q_t**2 - dd_q_s * cos(q_s) * ( M1 * a_s + L1 * M2 ) - M2 * a_t * dd_q_t * cos(q_t) ) / (M1 + M2);
+                    dd_x_h_kin = ( sin(q_s) * ( M1 * a_s + L1 * M2 ) * (d_q_s**2) + M2 * a_t * sin(q_t) * (d_q_t**2) - dd_q_s * cos(q_s) * ( M1 * a_s + L1 * M2 ) - M2 * a_t * dd_q_t * cos(q_t) ) / (M1 + M2);
                     d_x_h_kin = d_x_hip - L1 * d_q_1 * cos(q_s) - L2 * d_q_t * cos(q_t) - d_x_h;
-                    x_h_kin = d_x_hip * deltaT * (time.time() - time_Start) - L1 * sin(q_s) - L2 * sin(q_t) - ( -L1 * sin(q_s_Start) - L2 * sin(q_t_Start)) - x_h;
+                    x_h_kin = d_x_hip * deltaT * (time.time() - time_slip_start) - L1 * sin(q_s) - L2 * sin(q_t) - ( -L1 * sin(q_s_Start) - L2 * sin(q_t_Start)) - x_h;
                 
                     Yhat = np.transpose(Y) - np.array[ [dd_x_h_kin],[d_x_h_kin],[x_h_kin] ]
                 
@@ -571,8 +681,7 @@ async def main_loop():
                     #force end slip after 5 seconds
                     pass
                 
-        await asyncio.sleep(0)
-        
+        await asyncio.sleep(0)   
 
 
 async def main_func():
