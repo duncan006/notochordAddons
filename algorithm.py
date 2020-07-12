@@ -624,10 +624,10 @@ async def main_loop():
                     xkk = np.array([[x_h], [d_x_h], [q_s], [q_t]])
                     pkk = np.zeros(4, 4)
                 
-                    x_h = xkk(1)
-                    d_x_h = xkk(2)
-                    q_s = xkk(3)
-                    q_t = xkk(4)
+                    x_h = xkk[0]
+                    d_x_h = xkk[1]
+                    q_s = xkk[2]
+                    q_t = xkk[3]
                 
                     Ftheta23 = ( M1 * a_s + M2 * L2 ) / Msum * ( cos(q_s) * d_q_s**2 + dd_q_s * sin(q_s) )
                     Ftheta24 = ( M2 * L2 ) / Msum * ( cos(q_t) * d_q_t**2 + dd_q_t * sin(q_t))
@@ -639,10 +639,10 @@ async def main_loop():
                     xkk_1 = xkk + deltaT * np.array([[d_x_h],[dd_x_h],[d_q_s],[d_q_t]])
                     pkk_1 = F * pkk * np.transpose(F) + Q
                 
-                    x_h = xkk_1(1)
-                    d_x_h = xkk_1(2)
-                    q_s = xkk_1(3)
-                    q_t = xkk_1(4)
+                    x_h = xkk_1[0]
+                    d_x_h = xkk_1[1]
+                    q_s = xkk_1[2]
+                    q_t = xkk_1[3]
                 
                 #-------------------------------------------------------------#
                 
