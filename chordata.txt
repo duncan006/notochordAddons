@@ -25,14 +25,14 @@ Setting up the Physical System:
 
 1. Do not power system until directed. Live plugging k-ceptors is known to blow the buck converter.
 2. Affix all sensors to the subject. 
-        -Shoe sensors attach the the outside of the shoe, _____ side forward with a binder clip
+        -Shoe sensors attach the the outside of the shoe, ##_____ side forward with a binder clip
         -All other sensors, whenever possible, get positioned with the "out" port facing upwards
-        -If using Blender for full skeleton capture, 15 sensors req.d - see diagram at ______
+        -If using Blender for full skeleton capture, 15 sensors req.d - see diagram at https://wiki.chordata.cc/wiki/File:DefBipedConf.png
         -Note that the addresses can be changed from Chordata.xml or full_biped.xml
         -If using algorithm, minimum 4 sensors (1_0=thigh, 1_1=shank, 1_2=foot, 2_0=back)
         -Note that the addresses can be changed in the "addressDict" variable at the top of the algorithm
 3. Plug sensors in - HUB -- IN/ID_0/OUT -- IN/ID_1/OUT
-4. Connect Hub to raspberry pi - see diagram at _____
+4. Connect Hub to raspberry pi - see diagram at https://wiki.chordata.cc/wiki/User_Manual/2._Setting_up_the_system
         -If powering the pi, connect pi to hub with 5 jumpers
         -If powering the hub, connect pi to hub with 4 jumpers and USB
 5. Attach remaining components (battery, pi, hub) to the back brace with velcro
