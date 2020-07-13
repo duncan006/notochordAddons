@@ -66,19 +66,28 @@ Useful Flags:
 --odr=[frequency] changes sample rate, default 50Hz, max 100Hz
 --scan creates armature by scanning setup instead of using configuration file.
 
+Updating the Notochord:
+Navigate to the Notochord directory
+
+git checkout develop
+git pull
+scons -j3 debug=1
+
 ----------------------------------------------------------------------------
+
+Installing the Algorithm
+
+run "git pull https://github.com/duncan006/notochordAddons.git"
 
 Running the Algorithm:
 
 1. Follow steps above to run the Notochord, using -r --scan localhost
-2. Run algorithmSlip.py in root
-
-----------------------------------------------------------------------------
+2. Run algorithmSlip.py in ./notochordAddons
 
 Running the Algorithm (Cheat Sheet):
 
 Fill in IP
-ssh pi@IP ./algorithmSlip.py
+ssh pi@IP ./notochordAddons/algorithmSlip.py
 ssh pi@IP ./notochord/bin/notochord --raw --scan -y localhost
 
 ----------------------------------------------------------------------------
