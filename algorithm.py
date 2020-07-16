@@ -3,7 +3,7 @@ from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 import serial
 import time
-from math import sin, cos, sqrt, tan
+from math import sin, cos, sqrt, atan2
 from scipy import integrate
 from scipy.spatial.transform import Rotation
 import numpy as np
