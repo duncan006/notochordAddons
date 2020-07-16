@@ -124,6 +124,9 @@ gait = 2
 calibAngThigh = []
 calibAngShank = []
 calibAngHeel  = []
+storedAngThigh = []
+storedAngShank = []
+storedAngHeel  = []
 
 dd_x_t_std_arr = []
 dd_y_t_std_arr = []
@@ -369,10 +372,14 @@ def data_handler(address, *args):
             calibAngThigh.append(atan2(dd_x_t,dd_y_t))
             calibAngShank.append(atan2(dd_x_s,dd_y_s))
             calibAngHeel.append(atan2(dd_x_h,dd_y_h))
+	
+	    storedAngThigh.append(q_t)
+            storedAngShank.append(q_s)
+            storedAngHeel.append(q_h)
         
-            thighOffset = sum(calibAngThigh) / len(calibAngThigh)
-            shankOffset = sum(calibAngShank) / len(calibAngShank)
-            heelOffset = sum(calibAngHeel) / len(calibAngHeel)
+            thighOffset = storedAngThigh - (sum(calibAngThigh) / len(calibAngThigh))
+            shankOffset = storedAngShank - (sum(calibAngShank) / len(calibAngShank))
+            heelOffset = storedAngHeel - (sum(calibAngHeel) / len(calibAngHeel))
             
             
             #-----------------------------------------------------------------
