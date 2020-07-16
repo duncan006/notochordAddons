@@ -145,8 +145,8 @@ R = np.array([[25/10,0,0], [0,0.00001*5, 0],[0,0,0.0001*5]])
 
 fileDump = open("algDump.txt", "w+")
 fileOGDump = open("algDump_nofilter.txt", "w+")
-fileDump.write("q_s | d_q_s | dd_x_s | dd_y_s | q_h | d_q_h | dd_x_h | dd_y_h")
-fileOGDump.write("q_s | d_q_s | dd_x_s | dd_y_s | q_h | d_q_h | dd_x_h | dd_y_h")
+fileDump.write("q_s d_q_s dd_x_s dd_y_s q_h d_q_h dd_x_h dd_y_h\n")
+fileOGDump.write("q_s d_q_s dd_x_s dd_y_s q_h d_q_h dd_x_h dd_y_h\n")
 
 
 class KalmanFilter(object):
