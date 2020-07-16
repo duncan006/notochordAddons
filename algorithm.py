@@ -376,9 +376,9 @@ def data_handler(address, *args):
             storedAngShank.append(q_s)
             storedAngHeel.append(q_h)
         
-            thighOffset = storedAngThigh - (sum(calibAngThigh) / len(calibAngThigh))
-            shankOffset = storedAngShank - (sum(calibAngShank) / len(calibAngShank))
-            heelOffset = storedAngHeel - (sum(calibAngHeel) / len(calibAngHeel))
+            thighOffset = (sum(storedAngThigh) / len(storedAngThigh)) - (sum(calibAngThigh) / len(calibAngThigh))
+            shankOffset = (sum(storedAngShank) / len(storedAngShank)) - (sum(calibAngShank) / len(calibAngShank))
+            heelOffset = (sum(storedAngHeel) / len(storedAngHeel)) - (sum(calibAngHeel) / len(calibAngHeel))
             
             
             #-----------------------------------------------------------------
