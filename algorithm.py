@@ -148,7 +148,7 @@ R = np.array([[25/10,0,0], [0,0.00001*5, 0],[0,0,0.0001*5]])
 
 fileDump = open("algDump.txt", "w+")
 fileOGDump = open("algDump_nofilter.txt", "w+")
-fileDump.write("q_s d_q_s dd_x_s dd_y_s q_h d_q_h dd_x_h dd_y_h\n")
+fileDump.write("q_s_filt d_q_s_filt dd_x_s_filt dd_y_s_filt q_h_filt d_q_h_filt dd_x_h_filt dd_y_h_filt\n")
 fileOGDump.write("q_s d_q_s dd_x_s dd_y_s q_h d_q_h dd_x_h dd_y_h\n")
 
 
