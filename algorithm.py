@@ -372,9 +372,9 @@ def data_handler(address, *args):
             calibAngShank.append(atan2(dd_x_s,dd_y_s))
             calibAngHeel.append(atan2(dd_x_h,dd_y_h))
 		
-		storedAngThigh.append(q_t)
-		storedAngShank.append(q_s)
-		storedAngHeel.append(q_h)
+            storedAngThigh.append(q_t)
+            storedAngShank.append(q_s)
+            storedAngHeel.append(q_h)
         
             thighOffset = storedAngThigh - (sum(calibAngThigh) / len(calibAngThigh))
             shankOffset = storedAngShank - (sum(calibAngShank) / len(calibAngShank))
