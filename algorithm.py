@@ -3,7 +3,7 @@ from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 import serial
 import time
-from math import sin, cos, sqrt, atan2
+from math import sin, cos, sqrt, tan
 from scipy import integrate
 from scipy.spatial.transform import Rotation
 import numpy as np
@@ -74,10 +74,10 @@ qFlagDict = {
 }
 
 addressDict = {
-	"22": "rThigh",
+	"10": "rThigh",
 	"11": "rShank",
-	"10": "rHeel",
-	"30": "lowBack",
+	"12": "rHeel",
+	"20": "lowBack",
 }
 
 orderDict = {
@@ -124,9 +124,6 @@ gait = 2
 calibAngThigh = []
 calibAngShank = []
 calibAngHeel  = []
-storedAngThigh = []
-storedAngShank = []
-storedAngHeel  = []
 
 dd_x_t_std_arr = []
 dd_y_t_std_arr = []
@@ -148,8 +145,8 @@ R = np.array([[25/10,0,0], [0,0.00001*5, 0],[0,0,0.0001*5]])
 
 fileDump = open("algDump.txt", "w+")
 fileOGDump = open("algDump_nofilter.txt", "w+")
-fileDump.write("q_s_filt d_q_s_filt dd_x_s_filt dd_y_s_filt q_h_filt d_q_h_filt dd_x_h_filt dd_y_h_filt\n")
-fileOGDump.write("q_s d_q_s dd_x_s dd_y_s q_h d_q_h dd_x_h dd_y_h\n")
+fileDump.write("q_s | d_q_s | dd_x_s | dd_y_s | q_h | d_q_h | dd_x_h | dd_y_h")
+fileOGDump.write("q_s | d_q_s | dd_x_s | dd_y_s | q_h | d_q_h | dd_x_h | dd_y_h")
 
 
 class KalmanFilter(object):
@@ -170,6 +167,26 @@ class KalmanFilter(object):
 
     def get_latest_estimated_measurement(self):
         return self.posteri_estimate
+
+
+class unwrapper:
+    def __init__(self, lastInput):
+        self.lastInput = lastInput
+        self.calib = 0
+        
+    def unwrap(self, nextInput):
+        diff = self.lastInput - nextInput
+    
+        if diff > 3:
+            self.calib = self.calib - (2 * math.pi)
+    
+        elif diff < -3:
+            self.calib = self.calib + (2 * math.pi)
+    
+        outputVar = nextInput - self.calib
+        self.lastInput = nextInput
+        
+        return outputVar
 
 
 def bodyParameters(mass, height):
@@ -368,17 +385,14 @@ def data_handler(address, *args):
             
             #-----------------------------------------------------------------
             #---------------------------Angle Calibration----------------------
+            
             calibAngThigh.append(atan2(dd_x_t,dd_y_t))
             calibAngShank.append(atan2(dd_x_s,dd_y_s))
             calibAngHeel.append(atan2(dd_x_h,dd_y_h))
-		
-            storedAngThigh.append(q_t)
-            storedAngShank.append(q_s)
-            storedAngHeel.append(q_h)
         
-            thighOffset = sum(storedAngThigh) / len(storedAngThigh)
-            shankOffset = sum(storedAngShank) / len(storedAngShank)
-            heelOffset = sum(storedAngHeel) / len(storedAngHeel)
+            thighOffset = sum(calibAngThigh) / len(calibAngThigh)
+            shankOffset = sum(calibAngShank) / len(calibAngShank)
+            heelOffset = sum(calibAngHeel) / len(calibAngHeel)
             
             
             #-----------------------------------------------------------------
@@ -434,8 +448,18 @@ def data_handler(address, *args):
             fileDump.write(f"{q_s} {d_q_s} {dd_x_s} {dd_y_s} {q_h} {d_q_h} {dd_x_h} {dd_y_h} [CALIBRATION COMPLETE]\n")
             print("calibration complete")
             
+            unwrapT = unwrapper(q_t)
+            unwrapS = unwrapper(q_s)
+            unwrapH = unwrapper(q_h)
             
         else: #After calibTime, start running actual algorithm
+            
+            #-----------------------------------------------------------------
+            #----------------------Unwrapping Angles----------------------
+            
+            q_t = test.unwrap(q_t)
+            q_s = test.unwrap(q_s)
+            q_h = test.unwrap(q_h)
             
             
             #-----------------------------------------------------------------
