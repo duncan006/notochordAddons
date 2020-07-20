@@ -74,9 +74,9 @@ qFlagDict = {
 }
 
 addressDict = {
-	"10": "rThigh",
+	"12": "rThigh",
 	"11": "rShank",
-	"12": "rHeel",
+	"10": "rHeel",
 	"20": "lowBack",
 }
 
