@@ -390,9 +390,9 @@ def data_handler(address, *args):
             calibAngShank.append(atan2(dd_x_s,dd_y_s))
             calibAngHeel.append(atan2(dd_x_h,dd_y_h))
         
-            thighOffset = sum(calibAngThigh) / len(calibAngThigh)
-            shankOffset = sum(calibAngShank) / len(calibAngShank)
-            heelOffset = sum(calibAngHeel) / len(calibAngHeel)
+            thighOffset = np.mean(calibAngThigh)
+            shankOffset = np.mean(calibAngShank)
+            heelOffset = np.mean(calibAngHeel)
             
             
             #-----------------------------------------------------------------
@@ -531,9 +531,9 @@ def data_handler(address, *args):
             dd_q_h_arr = np.diff(d_q_h_arr)
             
             try:
-                dd_q_s = sum(dd_q_s_arr) / (len(dd_q_s_arr))
-                dd_q_t = sum(dd_q_t_arr) / (len(dd_q_t_arr))
-                dd_q_h = sum(dd_q_h_arr) / (len(dd_q_h_arr))
+                dd_q_s = np.mean(dd_q_s_arr)
+                dd_q_t = np.mean(dd_q_t_arr)
+                dd_q_h = np.mean(dd_q_h_arr)
             except ZeroDivisionError:
                 dd_q_s = 0
                 dd_q_t = 0
