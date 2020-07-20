@@ -274,6 +274,7 @@ def data_handler(address, *args):
     global winters
     global d_q_s_arr, d_q_t_arr, d_q_h_arr, dd_q_s_arr, dd_q_t_arr, dd_q_h_arr, d_x_p_arr, d_x_h_arr, dd_x_h_arr, dd_x_p_arr
     global timeArray, gait, R
+    global unwrapT, unwrapS, unwrapH
     
     
     #-----------------------------------------------------------------
