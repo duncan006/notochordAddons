@@ -16,7 +16,7 @@ class gaitDetect:
         self.timeLastHeelStrike = 0
         self.timeLastToeOff = 0
         self.gaitStage = 0 #0 for swing, 1 for stance
-        self.eventTimer = .15
+        self.eventTimer = .2
         
     def testVal(self, nextVal):
         self.movingArr.append(nextVal)
@@ -25,24 +25,28 @@ class gaitDetect:
         self.movingAvg = np.mean(self.movingArr)
         
         if self.significance == 0:
-        
+            print("significance is zero")
             if self.movingAvg > 0 and self.lastAvg < 0: #detects negative to positive, aka heel strike or start of stance phase
+                print("heel strike")
                 self.significance = 1
                 self.timeLastHeelStrike = time.time()
                 self.gaitStage = 1
             elif self.movingAvg < 0 and self.lastAvg > 0: #detects positive to negative, aka toe off or start of swing phase
+                print("toe off")
                 self.significance = -1
                 self.timeLastToeOff = time.time()
                 self.gaitStage = 0
                 
-        if self.significance != 0:
+        elif int(self.significance) != 0:
+            print("resetting significance")
             if time.time() - self.timeLastHeelStrike > self.eventTimer and time.time() - self.timeLastToeOff > self.eventTimer:
+                print("significance reset")
                 self.significance = 0
         
         #Implement other leg IMU - other leg heel strike must occur before measured leg toe off. (and vice versa)
-        self.lastAvg = self.movingAvg
         
-        print(self.movingAvg)
+        
+        self.lastAvg = self.movingAvg
         
 
 if __name__ == "__main__":
