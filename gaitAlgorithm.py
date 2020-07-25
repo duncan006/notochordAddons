@@ -16,7 +16,7 @@ class gaitDetect:
         self.timeLastHeelStrike = 0
         self.timeLastToeOff = 0
         self.gaitStage = 0 #0 for swing, 1 for stance
-        self.eventTimer = .150
+        self.eventTimer = .100
         
     def testVal(self, nextVal):
         self.movingArr.append(nextVal)
@@ -39,6 +39,7 @@ class gaitDetect:
                 self.significance = 0
         
         #Implement other leg IMU - other leg heel strike must occur before measured leg toe off. (and vice versa)
+        #if whole average array is approximately zero, then standing. When standing and sudden down spike, start walking.
         
         print(f"{self.gaitStage}")
 
@@ -46,7 +47,6 @@ class gaitDetect:
         
 
 if __name__ == "__main__":
-    print(len())
     gaitDetectRight = gaitDetect(0)
     outputArr = []
     for enum, x in enumerate(inputShank):
@@ -59,5 +59,3 @@ if __name__ == "__main__":
         time.sleep(.02)
     
     print(outputArr)
-    print(len(outputArr))
-    print(len(inputShank))
