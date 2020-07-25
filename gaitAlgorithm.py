@@ -29,7 +29,7 @@ class gaitDetect:
         self.movingAvg = np.mean(self.movingArr)
         
         if self.standing == True:
-            self.gaitStage = 1
+            self.gaitStage = 0
             if self.movingAvg < - self.standingLimit or self.movingAvg > self.standingLimit:
                 self.standing = False
                 
