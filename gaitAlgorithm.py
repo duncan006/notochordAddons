@@ -10,13 +10,14 @@ class gaitDetect:
         self.firstVar = firstVar
         self.movingArr = [firstVar]
         self.significance = 0
-        self.movingAvgAccuracy = 3
+        self.movingAvgAccuracy = 2
         self.movingAvg = 0
         self.lastAvg = 0
         self.timeLastHeelStrike = 0
         self.timeLastToeOff = 0
         self.gaitStage = 0 #0 for swing, 1 for stance
-        self.eventTimer = .100
+        self.eventTimer = .15
+        self.standing = False
         
     def testVal(self, nextVal):
         self.movingArr.append(nextVal)
@@ -24,22 +25,26 @@ class gaitDetect:
             self.movingArr.pop(0)
         self.movingAvg = np.mean(self.movingArr)
         
-        if self.significance == 0:
+        if self.standing == True:
+            self.gaitStage = 1
+            if self.movingAvg < -200 or self.movingAvg > 200:
+                self.standing = False
+        
+        if self.significance == 0 and not self.standing:
             if self.movingAvg > 0 and self.lastAvg < 0: #detects negative to positive, aka heel strike or start of stance phase
                 self.significance = 1
                 self.timeLastHeelStrike = time.time()
-                self.gaitStage = 1
+                self.gaitStage = 0
             elif self.movingAvg < 0 and self.lastAvg > 0: #detects positive to negative, aka toe off or start of swing phase
                 self.significance = -1
                 self.timeLastToeOff = time.time()
-                self.gaitStage = 0
+                self.gaitStage = 1
                 
         elif self.significance != 0:
             if time.time() - self.timeLastHeelStrike > self.eventTimer and time.time() - self.timeLastToeOff > self.eventTimer:
                 self.significance = 0
         
         #Implement other leg IMU - other leg heel strike must occur before measured leg toe off. (and vice versa)
-        #if whole average array is approximately zero, then standing. When standing and sudden down spike, start walking.
         
         print(f"{self.gaitStage}")
 
