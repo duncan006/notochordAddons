@@ -18,6 +18,9 @@ class gaitDetect:
         self.gaitStage = 0 #0 for swing, 1 for stance
         self.eventTimer = .15
         self.standing = False
+        self.standingLimit = 200
+        self.concurrentZeroes = 0
+        self.concurrentZeroesLimit = 5
         
     def testVal(self, nextVal):
         self.movingArr.append(nextVal)
@@ -27,8 +30,17 @@ class gaitDetect:
         
         if self.standing == True:
             self.gaitStage = 1
-            if self.movingAvg < -200 or self.movingAvg > 200:
+            if self.movingAvg < - self.standingLimit or self.movingAvg > self.standingLimit:
                 self.standing = False
+                
+        if self.standing == False:
+            if self.movingAvg < self.standingLimit and self.movingAvg > - self.standingLimit:
+                self.concurrentZeroes += 1
+            else:
+                self.concurrentZeroes = 0
+                
+            if self.concurrentZeroes > self.concurrentZeroesLimit:
+                self.standing = True
         
         if self.significance == 0 and not self.standing:
             if self.movingAvg > 0 and self.lastAvg < 0: #detects negative to positive, aka heel strike or start of stance phase
