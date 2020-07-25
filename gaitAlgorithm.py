@@ -16,7 +16,7 @@ class gaitDetect:
         self.timeLastHeelStrike = 0
         self.timeLastToeOff = 0
         self.gaitStage = 0 #0 for swing, 1 for stance
-        self.eventTimer = .15
+        self.eventTimer = .1
         self.standing = False
         self.standingLimit = 200
         self.concurrentZeroes = 0
@@ -32,6 +32,7 @@ class gaitDetect:
             self.gaitStage = 0
             if self.movingAvg < - self.standingLimit or self.movingAvg > self.standingLimit:
                 self.standing = False
+                self.lastAvg = - self.movingAvg
                 
         if self.standing == False:
             if self.movingAvg < self.standingLimit and self.movingAvg > - self.standingLimit:
@@ -73,6 +74,6 @@ if __name__ == "__main__":
 
         outputArr.append(gaitDetectRight.gaitStage)
         
-        time.sleep(.02)
+        time.sleep(.04)
     
     print(outputArr)
