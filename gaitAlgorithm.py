@@ -15,7 +15,7 @@ class gaitDetect:
         self.lastAvg = 0
         self.timeLastHeelStrike = 0
         self.timeLastToeOff = 0
-        self.gaitStage = 0 #0 for swing, 1 for stance
+        self.gaitStage = 0 #1 for swing, 0 for stance
         self.eventTimer = .1
         self.standing = False
         self.standingLimit = 200
