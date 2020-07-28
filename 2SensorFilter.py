@@ -113,8 +113,12 @@ def data_handler(address, *args):
             rBool1 = True
             outR1 = f"{varType}{sensorNum}"
             for pos, x in enumerate(args):
-                if pos < 6:
-                    outR1 += f" {x}"
+                if pos < 3:
+                    outR0 += f" {x * .07}"
+                elif pos >=3 and pos < 6:
+                    outR0 += f" {x * .000244}"
+                elif pos >= 6:
+                    outR0 += f" {x * .00014}"
         
     elif varType == "q":
         x,y,z = package_handler_q(args)
