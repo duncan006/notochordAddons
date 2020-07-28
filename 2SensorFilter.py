@@ -144,7 +144,8 @@ def data_handler(address, *args):
         rBool1 = False
         
         try:
-            out = f"{time.time() - timeStart} {time.time() - pullTime} {outR0} {outE0} {outR1} {outE1}"
+            #out = f"{time.time() - timeStart} {time.time() - pullTime} {outR0} {outE0} {outR1} {outE1}"
+            out = f"{time.time() - timeStart} {time.time() - pullTime} {outR0} {outR1}"
         except NameError:
             pass
         
