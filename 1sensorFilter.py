@@ -68,9 +68,9 @@ def package_handler_q(tup):
     r = Rotation.from_quat([x,y,z,w])
     e = r.as_euler('xyz', degrees=False)
     
-    out.append(e[0]) #x-axis euler
-    out.append(e[1]) #y-axis euler
-    out.append(e[2]) #z-axis euler
+    out.append(e[0] * 180 / math.pi) #x-axis euler
+    out.append(e[1] * 180 / math.pi) #y-axis euler
+    out.append(e[2] * 180 / math.pi) #z-axis euler
     
     return out
     
