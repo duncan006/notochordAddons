@@ -90,9 +90,6 @@ def data_handler(address, *args):
         rBool = True
         rPacket = "raw "
         
-        for x in args:
-            rPacket += f"{x} "
-            
         for pos, x in enumerate(args):
             if pos < 3:
                 rPacket += f" {x * .07}"
