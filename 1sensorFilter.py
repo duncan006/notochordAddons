@@ -89,8 +89,17 @@ def data_handler(address, *args):
     if varType == "r":
         rBool = True
         rPacket = "raw "
+        
         for x in args:
             rPacket += f"{x} "
+            
+        for pos, x in enumerate(args):
+            if pos < 3:
+                rPacket += f" {x * .07}"
+            elif pos >=3 and pos < 6:
+                rPacket += f" {x * .000244}"
+            elif pos >= 6:
+                rPacket += f" {x * .00014}"
     elif varType == "q":
         eBool = True
         x,y,z = package_handler_q(args)
