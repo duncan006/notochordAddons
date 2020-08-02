@@ -97,6 +97,9 @@ def data_handler(address, *args):
                 rPacket += f" {x * .000244}"
             elif pos >= 6:
                 rPacket += f" {x * .00014}"
+                
+            rPacket += " "
+            
     elif varType == "q":
         eBool = True
         x,y,z = package_handler_q(args)
