@@ -118,13 +118,13 @@ def data_handler(address, *args):
             out += str(time.time() - pullTime)
             out += " "
         except NameError:
-            #out += " 0 "
-            pass
+            out += " 0 "
+            #pass
         
         pullTime = time.time()
     
-        #out += rPacket
-        #out += ePacket
+        out += rPacket
+        out += ePacket
         print(out)
         fileData.write(out)
         fileData.write("\n")
