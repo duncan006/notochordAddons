@@ -269,7 +269,7 @@ def package_handler_raw(tup):
         if pos < 3:
             out.append(x * .07)
         elif pos >=3 and pos < 6:
-            out.append(x * .000244)
+            out.append(x * .000244 * 9.81)
         elif pos >= 6:
             out.append(x * .00014)
             
@@ -291,7 +291,7 @@ def slipAlgorithm(q_s, q_t, d_q_s, d_q_t, dd_q_s, dd_q_t, dd_y_t, dd_x_h):
     y_hh = (winters["Lt"] * cos(q_t)) + (winters["Ls"] * cos(q_s))
     L_hh = sqrt((x_hh**2) + (y_hh**2))
     
-    dd_q_hh = (dd_y_t - dd_x_h) / L_hh
+    dd_q_hh = ((dd_y_t - 9) - dd_x_h) / L_hh
     
     slip_indicator = Xs / (beta ** (dd_q_hh - gamma))
     
