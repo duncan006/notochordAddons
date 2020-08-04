@@ -161,7 +161,7 @@ class gaitDetect:
         self.gyZarray = [0]
         self.angularAcceleration = 0
     
-    def angularAcceleration(self):
+    def angularAccelerationCalc(self):
         self.gyZarray.append(self.gyZ)
         
         while len(self.gyZarray) > 5:
@@ -395,8 +395,8 @@ def data_handler(address, *args):
         gaitDetectShank.angleCalc(gaitDetectShank)
         gaitDetectHeel.angleCalc(gaitDetectShank)
         
-        gaitDetectThigh.angularAcceleration()
-        gaitDetectShank.angularAcceleration()
+        gaitDetectThigh.angularAccelerationCalc()
+        gaitDetectShank.angularAccelerationCalc()
 	
         dd_q_t = gaitDetectThigh.angularAcceleration
         dd_q_s = gaitDetectShank.angularAcceleration
