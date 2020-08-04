@@ -313,8 +313,8 @@ def data_handler(address, *args):
     varType = address[10]
     
     addr = ''
-    addr += str(address[9])
-    addr += str(address[11])
+    addr += str(address[len(address) - 3])
+    addr += str(address[len(address) - 1])
     
     out = []
        
@@ -398,7 +398,9 @@ def data_handler(address, *args):
         dd_q_t = gaitDetectRight.angularAccelerationThigh() 
         dd_q_s = gaitDetectRight.angularAccelerationShank()
 
-        fileDump.write(f"{timeToRun} {gaitDetectShank.gaitStage} {gaitDetectThigh.zAngle} {gaitDetectThigh.gyZ} {gaitDetectShank.zAngle} {gaitDetectShank.gyZ} {gaitDetectHeel.zAngle} {gaitDetectHeel.gyZ}")
+	outputString = f"{timeToRun} {gaitDetectShank.gaitStage} {gaitDetectThigh.zAngle} {gaitDetectThigh.gyZ} {gaitDetectShank.zAngle} {gaitDetectShank.gyZ} {gaitDetectHeel.zAngle} {gaitDetectHeel.gyZ}"
+	print(outputString)
+        fileDump.write(outputString)
         
         if slipAlgorithm(gaitDetectShank.zAngle, gaitDetectThigh.zAngle, gaitDetectShank.gyZ, gaitDetectThigh.gyZ, dd_q_s, dd_q_t, gaitDetectThigh.acY, gaitDetectHeel.acX):
             ardno("ac")
