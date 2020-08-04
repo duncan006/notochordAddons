@@ -403,7 +403,7 @@ def data_handler(address, *args):
 
         outputString = f"{timeToRun} {gaitDetectShank.gaitStage} {gaitDetectThigh.zAngle} {gaitDetectThigh.gyZ} {gaitDetectShank.zAngle} {gaitDetectShank.gyZ} {gaitDetectHeel.zAngle} {gaitDetectHeel.gyZ}"
         print(outputString)
-        fileDump.write(outputString)
+        fileDump.write(f"{outputString}\n")
         
         if slipAlgorithm(gaitDetectShank.zAngle, gaitDetectThigh.zAngle, gaitDetectShank.gyZ, gaitDetectThigh.gyZ, dd_q_s, dd_q_t, gaitDetectThigh.acY, gaitDetectHeel.acX):
             ardno("ac")
