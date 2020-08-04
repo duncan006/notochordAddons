@@ -22,6 +22,8 @@ port = 6565
 mass = 60 #kg
 height = 180 #cm
 
+timeCurrent = time.time()
+
 
 toggleFlagDict = {
 	"rThigh": True,
@@ -307,12 +309,9 @@ def data_handler(address, *args):
     global winters, fileDump
     global gaitDetectHeel, gaitDetectShank, gaitDetectThigh
     
-    try:
-        timeLastRun = timeCurrent
-        timeCurrent = time.time()
-        timeToRun = timeCurrent - timeLastRun
-    except:
-        timeToRun = .02
+    timeLastRun = timeCurrent
+    timeCurrent = time.time()
+    timeToRun = timeCurrent - timeLastRun
     
     
     varType = address[10]
