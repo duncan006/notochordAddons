@@ -450,7 +450,7 @@ if __name__ == "__main__":
     gaitDetectHeel = gaitDetect()
     
     fileDump = open("algDump.txt", "w+")
-    fileDump.write("timeCut gaitStage angThigh gyThigh angShank gyShank angHeel gyHeel\n")
+    fileDump.write("timeCut\tgaitStage\tangThigh\tgyThigh\tangShank\tgyShank\tangHeel\tgyHeel\n")
     
     main_func(ip, port)
     client.close()
