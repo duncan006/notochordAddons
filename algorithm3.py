@@ -398,8 +398,8 @@ def data_handler(address, *args):
         dd_q_t = gaitDetectRight.angularAccelerationThigh() 
         dd_q_s = gaitDetectRight.angularAccelerationShank()
 
-	outputString = f"{timeToRun} {gaitDetectShank.gaitStage} {gaitDetectThigh.zAngle} {gaitDetectThigh.gyZ} {gaitDetectShank.zAngle} {gaitDetectShank.gyZ} {gaitDetectHeel.zAngle} {gaitDetectHeel.gyZ}"
-	print(outputString)
+        outputString = f"{timeToRun} {gaitDetectShank.gaitStage} {gaitDetectThigh.zAngle} {gaitDetectThigh.gyZ} {gaitDetectShank.zAngle} {gaitDetectShank.gyZ} {gaitDetectHeel.zAngle} {gaitDetectHeel.gyZ}"
+        print(outputString)
         fileDump.write(outputString)
         
         if slipAlgorithm(gaitDetectShank.zAngle, gaitDetectThigh.zAngle, gaitDetectShank.gyZ, gaitDetectThigh.gyZ, dd_q_s, dd_q_t, gaitDetectThigh.acY, gaitDetectHeel.acX):
