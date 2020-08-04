@@ -395,8 +395,8 @@ def data_handler(address, *args):
         gaitDetectShank.angleCalc(gaitDetectShank)
         gaitDetectHeel.angleCalc(gaitDetectShank)
         
-        dd_q_t = gaitDetectRight.angularAccelerationThigh() 
-        dd_q_s = gaitDetectRight.angularAccelerationShank()
+        dd_q_t = gaitDetectThigh.angularAccelerationThigh() 
+        dd_q_s = gaitDetectShank.angularAccelerationShank()
 
         outputString = f"{timeToRun} {gaitDetectShank.gaitStage} {gaitDetectThigh.zAngle} {gaitDetectThigh.gyZ} {gaitDetectShank.zAngle} {gaitDetectShank.gyZ} {gaitDetectHeel.zAngle} {gaitDetectHeel.gyZ}"
         print(outputString)
