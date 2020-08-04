@@ -422,7 +422,7 @@ def default_handler(address, *args):
     out = 'DEFAULT '
     out += str(address)
     out += str(args)
-    print(out)
+    #print(out)
 
 
 
@@ -450,7 +450,7 @@ if __name__ == "__main__":
     gaitDetectHeel = gaitDetect()
     
     fileDump = open("algDump.txt", "w+")
-    fileDump.write("Thigh, Shank, Heel - gyX, gyY, gyZ, acX, acY, acZ, zAngle\n")
+    fileDump.write("timeCut gaitStage angThigh gyThigh angShank gyShank angHeel gyHeel\n")
     
     main_func(ip, port)
     client.close()
