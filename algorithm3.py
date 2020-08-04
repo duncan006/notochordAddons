@@ -428,7 +428,7 @@ def ardno(msg):
 
 def main_func(ip, port):   
     dispatcher = Dispatcher()
-    dispatcher.map("/%/*", data_handler)
+    dispatcher.map("/Chordata/r*", data_handler)
     dispatcher.set_default_handler(default_handler)
     
     server = BlockingOSCUDPServer((ip, port), dispatcher)
