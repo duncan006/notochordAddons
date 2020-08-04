@@ -130,7 +130,7 @@ class gaitDetect:
 
         #testVal() variables
         self.firstVar = 0
-        self.movingArr = [firstVar]
+        self.movingArr = [0]
         self.significance = 0
         self.movingAvgAccuracy = 2
         self.movingAvg = 0
