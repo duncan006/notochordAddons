@@ -384,12 +384,12 @@ def data_handler(address, *args):
         gaitDetectShank.acZ = s_raw[5]
         
         gaitDetectHeel.gyX = h_raw[0]
-        gaitDetectHeel.gyY = s_raw[1]
-        gaitDetectHeel.gyZ = s_raw[2]
+        gaitDetectHeel.gyY = h_raw[1]
+        gaitDetectHeel.gyZ = h_raw[2]
         
-        gaitDetectHeel.acX = s_raw[3]
-        gaitDetectHeel.acY = s_raw[4]
-        gaitDetectHeel.acZ = s_raw[5]
+        gaitDetectHeel.acX = h_raw[3]
+        gaitDetectHeel.acY = h_raw[4]
+        gaitDetectHeel.acZ = h_raw[5]
         
         forward_acceleration = b_raw[5]
         
