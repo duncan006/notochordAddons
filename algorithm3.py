@@ -278,8 +278,8 @@ def package_handler_raw(tup):
     
     
 def slipAlgorithm(q_s, q_t, d_q_s, d_q_t, dd_q_s, dd_q_t, dd_y_t, dd_x_h):
-	global fileDump
-	
+    global fileDump
+
     slip_constant = 2.83 #or 1.87
     beta = 2.718
     gamma = -562 #or -377 #deg/s
@@ -296,7 +296,7 @@ def slipAlgorithm(q_s, q_t, d_q_s, d_q_t, dd_q_s, dd_q_t, dd_y_t, dd_x_h):
     
     slip_indicator = Xs / (beta ** (dd_q_hh - gamma))
     
-	fileDump.write(f"{slip_indicator}")
+    fileDump.write(f"{slip_indicator}")
 	
     if slip_indicator >= slip_constant:
         return True
