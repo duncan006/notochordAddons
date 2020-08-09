@@ -99,40 +99,68 @@ def data_handler(address, *args):
         
         sensorNum = int(address[len(address) - 1])
         
-        if sensorNum == 0:
+        if sensorNum == 1:
             rBool0 = True
-            outR0 = f"{varType}{sensorNum}"
+            outR0 = ""
             for pos, x in enumerate(args):
-                if pos < 3:
-                    outR0 += f" {x * .07}"
-                elif pos >=3 and pos < 6:
-                    outR0 += f" {x * .000244}"
-                elif pos >= 6:
-                    outR0 += f" {x * .00014}"
-        elif sensorNum == 1:
+                if pos == 0:
+                    outR0 += f" {x * .07}\t"
+                if pos == 1:
+                    outR0 += f" {x * .07}\t"
+                if pos == 2:
+                    outR0 += f" {x * .07}\t"
+                if pos == 3:
+                    outR0 += f" {x * .000244}\t"
+                if pos == 4:
+                    outR0 += f" {x * .000244}\t"
+                if pos == 5:
+                    outR0 += f" {x * .000244}\t"
+                    
+                
+                #if pos < 3:
+                #    outR0 += f" {x * .07}"
+                #elif pos >=3 and pos < 6:
+                #    outR0 += f" {x * .000244}"
+                #elif pos >= 6:
+                #    outR0 += f" {x * .00014}"
+        elif sensorNum == 2:
             rBool1 = True
-            outR1 = f"{varType}{sensorNum}"
+            outR1 = ""
             for pos, x in enumerate(args):
-                if pos < 3:
-                    outR1 += f" {x * .07}"
-                elif pos >=3 and pos < 6:
-                    outR1 += f" {x * .000244}"
-                elif pos >= 6:
-                    outR1 += f" {x * .00014}"
+                if pos == 0:
+                    outR1 += f" {x * .07}\t"
+                if pos == 1:
+                    outR1 += f" {x * .07}\t"
+                if pos == 2:
+                    outR1 += f" {x * .07}\t"
+                if pos == 3:
+                    outR1 += f" {x * .000244}\t"
+                if pos == 4:
+                    outR1 += f" {x * .000244}\t"
+                if pos == 5:
+                    outR1 += f" {x * .000244}\t"
+                
+            
+                #if pos < 3:
+                #    outR1 += f" {x * .07}"
+                #elif pos >=3 and pos < 6:
+                #    outR1 += f" {x * .000244}"
+                #elif pos >= 6:
+                #    outR1 += f" {x * .00014}"
         
     elif varType == "q":
         x,y,z = package_handler_q(args)
         
         sensorNum = int(address[len(address) - 1])
         
-        if sensorNum == 0:
+        if sensorNum == 1:
             eBool0 = True
             x = unwrapX0.unwrap(x)
             y = unwrapY0.unwrap(y)
             z = unwrapZ0.unwrap(z)
             outE0 = f"{varType}{sensorNum} {x} {y} {z}"
         
-        elif sensorNum == 1:
+        elif sensorNum == 2:
             eBool1 = True
             x = unwrapX1.unwrap(x)
             y = unwrapY1.unwrap(y)
@@ -149,7 +177,7 @@ def data_handler(address, *args):
         
         try:
             #out = f"{time.time() - timeStart} {time.time() - pullTime} {outR0} {outE0} {outR1} {outE1}"
-            out = f"{time.time() - timeStart} {time.time() - pullTime} {outR0} {outR1}"
+            out = f"{time.time() - timeStart}\t{time.time() - pullTime}\t{outR0}\t{outR1}"
         except NameError:
             pass
         
