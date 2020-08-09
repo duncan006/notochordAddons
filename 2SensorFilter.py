@@ -101,7 +101,7 @@ def data_handler(address, *args):
         
         if sensorNum == 1:
             rBool0 = True
-            outR0 = ""
+            outR0 = "gyXYZ acXYZ"
             for pos, x in enumerate(args):
                 if pos == 0:
                     outR0 += f" {x * .07}\t"
@@ -125,20 +125,20 @@ def data_handler(address, *args):
                 #    outR0 += f" {x * .00014}"
         elif sensorNum == 2:
             rBool1 = True
-            outR1 = ""
+            outR1 = "gyYXZ acYXZ"
             for pos, x in enumerate(args):
                 if pos == 0:
                     outR1 += f" {x * .07}\t"
                 if pos == 1:
                     outR1 += f" {x * .07}\t"
                 if pos == 2:
-                    outR1 += f" {x * .07}\t"
+                    outR1 += f" {-x * .07}\t"
                 if pos == 3:
                     outR1 += f" {x * .000244}\t"
                 if pos == 4:
                     outR1 += f" {x * .000244}\t"
                 if pos == 5:
-                    outR1 += f" {x * .000244}\t"
+                    outR1 += f" {-x * .000244}\t"
                 
             
                 #if pos < 3:
