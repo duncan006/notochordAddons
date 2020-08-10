@@ -41,6 +41,8 @@ class gaitDetect:
         self.movingAvgHeel = np.mean(self.movingArrHeel)
         
         if self.standing == True:
+            
+            #Locks gait at 0 when standing detected, to prevent additional axes crossings. Recommended to leave on for live use.
             self.gaitStage = 0
             if self.movingAvgShank < - self.standingLimit or self.movingAvgShank > self.standingLimit:
                 self.standing = False
